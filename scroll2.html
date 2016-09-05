@@ -1,0 +1,211 @@
+<html>
+  <head>
+    <title>Test de pixi moen</title>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.0.0/jquery.min.js"></script>
+    <script src="pixi.js"></script>
+    <script src="stats.min.js"></script>
+   
+  </head>
+  <body>
+  this is melon !<div id='lol'>nb</div>
+   <script>
+   
+   /* $( document ).ready(function() {
+      console.log( "ready!" );
+    });*/
+    
+    stats = new Stats();
+    document.body.appendChild( stats.domElement );
+    stats.domElement.style.position = "absolute";
+    stats.domElement.style.top = "48px";
+    
+      var stage = new PIXI.Stage(0x000000);
+ 
+      // create a renderer instance.
+      var renderer = PIXI.autoDetectRenderer(1700, 748);
+   
+      // add the renderer view element to the DOM
+      document.body.appendChild(renderer.view);
+      requestAnimFrame( animate ); // draw
+      
+      // create a texture from an image path
+      var texture = PIXI.Texture.fromImage("cowboy.jpg");
+      // create a new Sprite using the texture
+      var cowboy = new PIXI.Sprite(texture);
+      
+      
+      console.log(cowboy);
+      
+      cowboy.position.x = 200;
+      cowboy.position.y = 200;
+      
+      
+      /************/
+      var texture = PIXI.Texture.fromImage("world_tileset.png").baseTexture;
+      var baseTile = new Tile(texture);
+      /************/
+       
+      
+      var drawbg = new drawBackground(baseTile);
+      drawbg.init();
+      var cpt = 0;
+      
+      /***** ANIMATE !! *****/
+      function animate() {
+        stats.begin();
+        cpt++;
+        //if(cpt % 20 == 0) { drawbg.rdchangesprite(); cpt = 0; }
+        // cowboy.rotation += 0.05;
+        document.getElementById('lol').innerHTML = stage.children.length;
+        
+        drawbg.display();
+        //stage.addChild(cowboy);
+        
+        // render the stage
+        renderer.render(stage);
+        drawbg.clear();
+        requestAnimFrame( animate );      
+        stats.end(); 
+     }
+      
+      
+      /*********************************************/
+      
+      function drawBackground(baseTile) {
+        this.tiles = [];
+        this.tileContainer = new PIXI.DisplayObjectContainer();
+        
+        this.MVpas = 2; // tiles à rendre
+        this.MVSpeed = 1; // vitesse de défilement
+        
+        this.init = function() {
+          console.log("Init bg drawer");
+          var firstX = 0; var firstY = 0;
+          var offsetX = 0;var offsetY = 0;
+          var baseOffsetX = 0; var baseOffsetY = 0;
+          var spriteX = 0; var spriteY = 0; // Pos dans le tileset
+          var posX = 0; var posY = 0; // pos à l'écran 
+          
+          var sprite = null;     
+          
+          for (y=0; y < 50 /*world.length*/; y++) {
+            var rowOffset = 0;
+            if ((firstY + y) % 2 == 1)
+              rowOffset = baseTile.OddRowXOffset;					
+              this.tiles[y] = []; 
+            for (x=0; x < 30/*world[y].length*/; x++) {
+
+              posX = (x * baseTile.TileStepX) - offsetX + rowOffset + baseOffsetX;
+              posY = (y * baseTile.TileStepY) - offsetY + baseOffsetY;
+              
+              var rand=Math.floor(Math.random()*5+1);
+              sprite = baseTile.get(rand /*sprite_id*/);
+              sprite.position.x = posX;
+              sprite.position.y = posY;
+              //this.tiles.push(sprite);
+              this.tiles[y][x] = sprite;
+              //this.tileContainer.addChild(sprite);
+            }
+          }
+
+         // for(i=0; i < this.tiles.length; i++) 
+         //   this.tileContainer.addChild(this.tiles[i]);
+          for(i=0; i < this.tiles.length; i++) 
+            for(j=0; j < this.tiles[i].length; j++) 
+              this.tileContainer.addChild(this.tiles[i][j]);
+              //stage.addChild(this.tiles[i][j]);
+          
+          stage.addChild(this.tileContainer);
+
+          this.tileContainer.position.y = -64;
+          this.tileContainer.position.x = -64 -64  * this.MVpas ;          
+        }
+        
+        this.display = function() {
+          
+         if(this.tileContainer.position.x >= -64) {
+            this.switch(); // move sprite!
+            this.tileContainer.position.x = -64 -64  * this.MVpas ;
+         }
+         this.tileContainer.position.x += this.MVSpeed;
+
+        }
+        
+        /**
+         * Switch sprite texture to simulate movement.
+         */
+        this.switch = function() {
+           
+          // Left move
+          for(i=0; i < this.tiles.length; i++) {
+            for(j=this.tiles[i].length-1; j >= this.MVpas; j--) {
+              // Switch tab[x] with tab[x-1]
+              this.tiles[i][j].setTexture(this.tiles[i][j-this.MVpas].texture);  
+            }
+            // Load new left sprites.
+            for(k=0; k<this.MVpas; k++) {
+              rand=Math.floor(Math.random()*5);
+              this.tiles[i][k].setTexture(baseTile.getTexture(rand/*+30*/));
+            }
+            
+          }
+        }
+        
+        this.clear = function() {
+          //stage.removeChild(this.bgsprite); 
+          //delete(this.bgsprite); 
+        }
+        
+        
+        this.textureid = 1; ///*
+        
+        this.rdchangesprite = function() {
+        
+        this.textureid++;
+        if(this.textureid == 20)
+          this.textureid = 1;
+        
+          for(var k=0; k < 100; k++) {
+            var rand=Math.floor(Math.random()*80+1);
+            var new_texture= baseTile.getTexture(rand);
+
+            sprite = this.tiles[k+rand];
+            sprite = this.tiles[k];
+            //sprite.texture = new_texture;
+            sprite.setTexture(new_texture);
+          }
+        }
+        
+      }
+
+                
+     function Tile(texture) {
+        this.TileSetTexture = texture;
+        this.TileWidth = 64;
+        this.TileHeight = 64;
+        this.TileStepX = 64;
+        this.TileStepY = 16;
+        this.OddRowXOffset = 32;
+        this.HeightTileOffset = 32;
+        this.textureCache = [];
+        
+        this.get = function(tileIndex) {
+          var tempTexture = this.getTexture(tileIndex);
+          var tile = new PIXI.Sprite(tempTexture);  
+          return tile;
+        }
+        
+        this.getTexture = function(tileIndex) {
+          if(!this.textureCache[tileIndex]) {
+            var tileY = Math.floor(tileIndex / (this.TileSetTexture.width / this.TileWidth));
+            var tileX = Math.floor(tileIndex % (this.TileSetTexture.width / this.TileWidth));
+            this.textureCache[tileIndex] = new PIXI.Texture(this.TileSetTexture, {x:tileX * this.TileWidth, y: tileY * this.TileHeight, width:this.TileWidth, height:this.TileHeight});        
+          }
+          return this.textureCache[tileIndex];
+        }
+
+      }
+
+    </script>
+  </body>
+</html>
